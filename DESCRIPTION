@@ -4,14 +4,13 @@ Title: Package for analysing healthcare costs for OMOP CDM from cohorts defined 
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Beatrice", "Hellrand",
+      email = "beatrice.marja.hellrand@ut.ee",
       role = c("aut", "cre")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Description: This package was developed as part of a Bachelor's thesis. The primary objective of the package is to provide a reproducible and modular framework for calculating and visualising direct healthcare costs in cohort-based studies. The package assumes that cohorts are defined using ATLAS and that the underlying data conforms to the OMOP CDM. It supports both programmatic analysis through R functions and interactive exploration via a Shiny web application.
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: 
