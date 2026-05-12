@@ -4,10 +4,10 @@
 \alias{plot_annual_costs}
 \title{Plot Annual Costs Over Time}
 \usage{
-plot_annual_costs(types_data)
+plot_annual_costs(graph_data)
 }
 \arguments{
-\item{types_data}{Data from prepare_types_data()}
+\item{graph_data}{Data from prepare_graph_data()}
 }
 \value{
 ggplot object

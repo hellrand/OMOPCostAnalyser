@@ -1,13 +1,13 @@
 #' Plot Costs by Type
 #'
-#' @param graph_data Data from prepare_graph_data()
+#' @param type_graph_data Data from prepare_type_graph_data()
 #'
 #' @return ggplot object
 #' @export
-plot_costs_by_type <- function(graph_data) {
+plot_costs_by_type <- function(type_graph_data) {
 
 
-  summary_data <- graph_data %>%
+  summary_data <- type_graph_data %>%
     dplyr::group_by(cohort, type) %>%
     dplyr::summarise(total_cost = sum(total_cost), .groups = "drop")
 
@@ -46,13 +46,13 @@ plot_annual_costs <- function(graph_data) {
 
 #' Plot Costs by Type and Year
 #'
-#' @param graph_data Data from prepare_graph_data()
+#' @param type_graph_data Data from prepare_type_graph_data()
 #'
 #' @return ggplot object
 #' @export
-plot_costs_by_type_year <- function(graph_data) {
+plot_costs_by_type_year <- function(type_graph_data) {
 
-  p <- ggplot(graph_data, aes(x = factor(year), y = total_cost, fill = cohort)) +
+  p <- ggplot(type_graph_data, aes(x = factor(year), y = total_cost, fill = cohort)) +
     geom_bar(stat = "identity", position = "dodge") +
     facet_wrap(~ type, scales = "free_y") +
     scale_fill_manual(values = c("Target" = "royalblue4", "Control" = "steelblue1")) +
@@ -71,12 +71,12 @@ plot_costs_by_type_year <- function(graph_data) {
 #'
 #' Line chart showing cost trends over time by type or number of patients over time
 #'
-#' @param graph_data Data from prepare_graph_data()
+#' @param type_graph_data Data from prepare_type_graph_data()
 #' @param cost_var Variable to plot: total_cost/n_patients (default: "total_cost")
 #'
 #' @return ggplot object
 #' @export
-plot_cost_trends <- function(graph_data,
+plot_cost_trends <- function(type_graph_data,
                              cost_var = "total_cost") {
 
   y_label <- case_when(
@@ -85,7 +85,7 @@ plot_cost_trends <- function(graph_data,
     TRUE ~ cost_var
   )
 
-  p <- ggplot(graph_data, aes(x = year, y = !!sym(cost_var),
+  p <- ggplot(type_graph_data, aes(x = year, y = !!sym(cost_var),
                               color = cohort, linetype = type,
                               group = interaction(cohort, type))) +
     geom_line(size = 1.2) +

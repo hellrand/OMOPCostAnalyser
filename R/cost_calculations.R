@@ -82,7 +82,7 @@ calculate_cost_summary <- function(cost_data, group_vars = "cohort") {
 
 #' Prepare Data for Shiny Application
 #'
-#' Creates 2 tables: aggregated summary by cost type, year, and cohort; person-level costs
+#' Creates 3 tables: aggregated summary by cost type, year, and cohort; person-level costs with and without type column
 #'
 #' @param all_costs Combined cost data from get_all_costs()
 #'
@@ -108,11 +108,11 @@ prepare_types_data <- function(all_costs) {
       .groups = "drop"
       )
 
-  # Calculate annual costs by_cohort table
+  # Calculate annual costs for by_cohort table
   person_costs <- calculate_annual_costs(all_costs)
 
 
-  # Calculate costs for graph and other tables
+  # Calculate costs for graphs
   types <- person_year_costs %>%
     dplyr::group_by(cohort, type, year) %>%
     dplyr::summarise(
@@ -133,11 +133,11 @@ prepare_types_data <- function(all_costs) {
   ))
 }
 
-#' Prepare Data for Analysis by Type and Year
+#' Prepare Data for Analysis by Year
 #'
-#' Creates aggregated summary by cost type, year, and cohort
+#' Creates aggregated summary by year, and cohort
 #'
-#' @param all_costs Combined cost data from get_all_costs()
+#' @param costs Cost data from get_*_costs()
 #'
 #' @return Tibble ready for visualization
 #' @export
@@ -166,7 +166,7 @@ prepare_graph_data <- function(costs) {
 #' @export
 prepare_type_graph_data <- function(all_costs) {
 
-  graph_data <- all_costs %>%
+  type_graph_data <- all_costs %>%
     dplyr::group_by(cohort, type, year) %>%
     dplyr::summarise(
       n_patients = dplyr::n_distinct(subject_id),
@@ -176,5 +176,5 @@ prepare_type_graph_data <- function(all_costs) {
       .groups = "drop"
     )
 
-  return(graph_data)
+  return(type_graph_data)
 }

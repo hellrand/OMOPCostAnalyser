@@ -4,10 +4,10 @@
 \alias{plot_cost_trends}
 \title{Plot Cost Trends by Type or Patient Number}
 \usage{
-plot_cost_trends(types_data, cost_var = "total_cost")
+plot_cost_trends(type_graph_data, cost_var = "total_cost")
 }
 \arguments{
-\item{types_data}{Data from prepare_types_data()}
+\item{type_graph_data}{Data from prepare_type_graph_data()}
 
 \item{cost_var}{Variable to plot: total_cost/n_patients (default: "total_cost")}
 }

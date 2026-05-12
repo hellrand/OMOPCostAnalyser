@@ -2,7 +2,7 @@
 % Please edit documentation in R/cost_calculations.R
 \name{prepare_types_data}
 \alias{prepare_types_data}
-\title{Prepare Data for Analysis by Type and Year}
+\title{Prepare Data for Shiny Application}
 \usage{
 prepare_types_data(all_costs)
 }
@@ -10,8 +10,8 @@ prepare_types_data(all_costs)
 \item{all_costs}{Combined cost data from get_all_costs()}
 }
 \value{
-Tibble ready for visualization
+List
 }
 \description{
-Creates aggregated summary by cost type, year, and cohort
+Creates 3 tables: aggregated summary by cost type, year, and cohort; person-level costs with and without type column
 }
