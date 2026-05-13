@@ -169,7 +169,7 @@ server <- function(input, output, session) {
       "total" = "Total Cost Summary",
       "by_year" = "Annual Cost Summary",
       "by_cohort" = "Cohort Cost Summary",
-      "statistical_comparison" = "Statistical Comparison of Median Costs"
+      "statistical_comparison" = "Statistical Comparison of Mean Costs"
     )
 
     summary_df <- switch(
