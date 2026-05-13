@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- badges: end -->
 
-The goal of OMOPCostAnalyser is to ...
+The goal of OMOPCostAnalyser is to provide a framework for analysing direct healthcare costs in cohort-based studies. The package assumes that cohorts are defined using ATLAS and that the underlying data conforms to the OMOP CDM.
 
 ## Installation
 
@@ -31,25 +31,23 @@ pak::pak("hellrand/OMOPCostAnalyser")
 
 ## Example
 
-This is a basic example which shows you how to solve a common problem:
+This is the basic workflow for launching the Shiny app:
 
 ```{r example}
 library(OMOPCostAnalyser)
-## basic example code
+# Connect to database and create CDM object
+
+# Match cohorts
+# cdm <- match_cohorts_workflow(cdm, "user_write_schema", cohort, 18, 19)
+
+# Get costs for matched cohorts
+# all_costs <- get_all_costs(cdm, cdm$matched_cohort)
+
+# Get data for Shiny app
+# types_data <- prepare_types_data(all_costs)
+ 
+# Launch Shiny app
+# launch_cost_app(types_data)
+ 
 ```
 
-What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so:
-
-```{r cars}
-summary(cars)
-```
-
-You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
-
-You can also embed plots, for example:
-
-```{r pressure, echo = FALSE}
-plot(pressure)
-```
-
-In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
