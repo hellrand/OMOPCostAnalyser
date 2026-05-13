@@ -65,7 +65,8 @@ ui <- fluidPage(
                          "Summary Table View:",
                          choices = c("Total (All Years)" = "total",
                                      "By Year" = "by_year",
-                                     "By Cohort Only" = "by_cohort"),
+                                     "By Cohort Only" = "by_cohort",
+                                     "Statistical Comparison" = "statistical_comparison"),
                          selected = "total")
           )
         ),
@@ -161,166 +162,313 @@ server <- function(input, output, session) {
   # Summary Table
   output$summary_table <- renderDT({
 
-    add_stats <- function(df, group_vars) {
-      summary_df <- df %>%
-        group_by(across(all_of(c(group_vars, "cohort")))) %>%
-        summarise(
-          `Total Patients` = n_distinct(subject_id),
-          `Total Cost` = sum(cost, na.rm = TRUE),
-          #`Paid by Payer` = sum(payer_cost, na.rm = TRUE),
-          #`Paid by Patient` = sum(patient_cost, na.rm = TRUE),
-          `Mean per Patient` = mean(cost, na.rm = TRUE),
-          `Median per Patient` = median(cost, na.rm = TRUE),
-          SD = sd(cost, na.rm = TRUE),
-          N = sum(!is.na(cost)),
-          SE = SD / sqrt(N),
-          `CI Lower` = `Mean per Patient` - qt(0.975, pmax(N - 1, 1)) * SE,
-          `CI Upper` = `Mean per Patient` + qt(0.975, pmax(N - 1, 1)) * SE,
-          .groups = "drop"
-        ) %>%
-        mutate(
-          `95% CI` = paste0(
-            round(`CI Lower`, 2),
-            " to ",
-            round(`CI Upper`, 2)
-          )
-        )
-
-      tests <- df %>%
-        group_by(across(all_of(group_vars))) %>%
-        summarise(
-          `p-value` = {
-            target <- cost[cohort == "Target"]
-            control <- cost[cohort == "Control"]
-            if (length(target) > 1 && length(control) > 1) {
-              wilcox.test(target, control)$p.value
-            } else {
-              NA_real_
-            }
-          },
-          .groups = "drop"
-        )
-
-      summary_df %>%
-        left_join(tests, by = group_vars) %>%
-        select(
-          all_of(group_vars),
-          Cohort = cohort,
-          `Total Patients`,
-          `Total Cost`,
-          `Paid by Payer`,
-          `Paid by Patient`,
-          `Mean per Patient`,
-          `Median per Patient`,
-          `95% CI`,
-          `p-value`
-        )
-    }
-
-    summary_df <- switch(
+    # TITLES
+    table_title <- switch(
       input$summary_grouping,
 
-      "by_year" = {
-        filtered_data()$person_type %>%
-          transmute(
-            Type = type,
-            Year = year,
-            cohort,
-            subject_id,
-            cost = person_annual_cost,
-            payer_cost = paid_by_payer,
-            patient_cost = paid_by_patient
-          ) %>%
-          add_stats(c("Type", "Year"))
-      },
+      "total" = "Total Cost Summary",
+      "by_year" = "Annual Cost Summary",
+      "by_cohort" = "Cohort Cost Summary",
+      "statistical_comparison" = "Statistical Comparison of Median Costs"
+    )
 
+    summary_df <- switch(
+
+      input$summary_grouping,
+
+      # =========================================================
+      # TOTAL
+      # =========================================================
       "total" = {
-        filtered_data()$person_type %>%
-          group_by(Type = type, cohort, subject_id) %>%
-          summarise(
-            cost = sum(person_annual_cost, na.rm = TRUE),
-            payer_cost = sum(paid_by_payer, na.rm = TRUE),
-            patient_cost = sum(paid_by_patient, na.rm = TRUE),
-            .groups = "drop"
-          ) %>%
-          add_stats("Type")
-      },
 
-      "by_cohort" = {
-        plot_data <- filtered_data()$person_level
+        plot_data <- filtered_data()$person_type
 
-        summary_df <- plot_data %>%
-          group_by(Cohort = cohort) %>%
+        plot_data %>%
+          group_by(Type = type, Cohort = cohort) %>%
           summarise(
             `Total Patients` = n_distinct(subject_id),
-            `Total Cost` = sum(annual_cost, na.rm = TRUE),
-            `Paid by Payer` = sum(annual_payer_cost, na.rm = TRUE),
-            `Paid by Patient` = sum(annual_patient_cost, na.rm = TRUE),
-            `Mean per Patient` = mean(annual_cost, na.rm = TRUE),
-            `Median per Patient` = median(annual_cost, na.rm = TRUE),
-            SD = sd(annual_cost, na.rm = TRUE),
-            N = sum(!is.na(annual_cost)),
-            SE = SD / sqrt(N),
-            `CI Lower` = `Mean per Patient` - qt(0.975, pmax(N - 1, 1)) * SE,
-            `CI Upper` = `Mean per Patient` + qt(0.975, pmax(N - 1, 1)) * SE,
-            `95% CI` = paste0(
-              round(`CI Lower`, 2),
-              " to ",
-              round(`CI Upper`, 2)
-            ),
-            .groups = "drop"
-          ) %>%
-          select(-N, -SE, -SD, -`CI Lower`, -`CI Upper`)
 
-        test_res <- plot_data %>%
+            `Total Cost` =
+              sum(person_annual_cost, na.rm = TRUE),
+
+            `Paid by Payer` =
+              sum(paid_by_payer, na.rm = TRUE),
+
+            `Paid by Patient` =
+              sum(paid_by_patient, na.rm = TRUE),
+
+            `Mean per Patient` =
+              mean(person_annual_cost, na.rm = TRUE),
+
+            `Median per Patient` =
+              median(person_annual_cost, na.rm = TRUE),
+
+            .groups = "drop"
+          )
+      },
+
+      # =========================================================
+      # BY YEAR
+      # =========================================================
+      "by_year" = {
+
+        plot_data <- filtered_data()$person_type
+
+        plot_data %>%
+          group_by(
+            Type = type,
+            Cohort = cohort,
+            Year = year
+          ) %>%
           summarise(
-            `p-value` = if (
-              sum(cohort == "Target") > 1 &&
-              sum(cohort == "Control") > 1
-            ) {
-              wilcox.test(
-                annual_cost[cohort == "Target"],
-                annual_cost[cohort == "Control"]
-              )$p.value
-            } else {
-              NA_real_
-            }
+
+            `Total Patients` =
+              n_distinct(subject_id),
+
+            `Total Cost` =
+              sum(person_annual_cost, na.rm = TRUE),
+
+            `Paid by Payer` =
+              sum(paid_by_payer, na.rm = TRUE),
+
+            `Paid by Patient` =
+              sum(paid_by_patient, na.rm = TRUE),
+
+            `Mean per Patient` =
+              mean(person_annual_cost, na.rm = TRUE),
+
+            `Median per Patient` =
+              median(person_annual_cost, na.rm = TRUE),
+
+            .groups = "drop"
+          )
+      },
+
+      # =========================================================
+      # BY COHORT
+      # =========================================================
+      "by_cohort" = {
+
+        plot_data <- filtered_data()$person_level
+
+        plot_data %>%
+          group_by(Cohort = cohort) %>%
+          summarise(
+
+            `Total Patients` =
+              n_distinct(subject_id),
+
+            `Total Cost` =
+              sum(annual_cost, na.rm = TRUE),
+
+            `Paid by Payer` =
+              sum(annual_payer_cost, na.rm = TRUE),
+
+            `Paid by Patient` =
+              sum(annual_patient_cost, na.rm = TRUE),
+
+            `Mean per Patient` =
+              mean(annual_cost, na.rm = TRUE),
+
+            `Median per Patient` =
+              median(annual_cost, na.rm = TRUE),
+
+            .groups = "drop"
+          )
+      },
+
+      # =========================================================
+      # STATISTICAL COMPARISON
+      # =========================================================
+      "statistical_comparison" = {
+
+        # Ensure that every patient contributes to every type
+        all_patients <- filtered_data()$person_level %>%
+          distinct(subject_id, cohort)
+
+        all_types <- tibble(
+          type = unique(filtered_data()$person_type$type)
+        )
+
+        complete_data <- tidyr::crossing(
+          all_patients,
+          all_types
+        ) %>%
+          left_join(
+            filtered_data()$person_type,
+            by = c("subject_id", "cohort", "type")
+          ) %>%
+          mutate(
+            person_annual_cost =
+              tidyr::replace_na(person_annual_cost, 0)
           )
 
-        bind_cols(summary_df, test_res)
+        plot_data <- complete_data
+
+        plot_data %>%
+          group_by(Type = type) %>%
+          summarise(
+
+            `Mean per Person (Target)` =
+              mean(
+                person_annual_cost[cohort == "Target"],
+                na.rm = TRUE
+              ),
+
+            `Mean per Person (Control)` =
+              mean(
+                person_annual_cost[cohort == "Control"],
+                na.rm = TRUE
+              ),
+
+            `Mean Cost Difference` =
+              `Mean per Person (Target)` -
+              `Mean per Person (Control)`,
+
+            ci_low = suppressWarnings(
+              t.test(
+                person_annual_cost[cohort == "Target"],
+                person_annual_cost[cohort == "Control"]
+              )$conf.int[1]
+            ),
+
+            ci_high = suppressWarnings(
+              t.test(
+                person_annual_cost[cohort == "Target"],
+                person_annual_cost[cohort == "Control"]
+              )$conf.int[2]
+            ),
+
+            `95% CI` = paste0(
+              round(ci_low, 2),
+              " - ",
+              round(ci_high, 2)
+            ),
+
+            p_value_numeric = suppressWarnings(
+              t.test(
+                person_annual_cost[cohort == "Target"],
+                person_annual_cost[cohort == "Control"]
+              )$p.value
+            ),
+
+            `p-value` = case_when(
+              is.na(p_value_numeric) ~ "",
+              p_value_numeric < 0.01 ~ "p < 0.01",
+              TRUE ~ sprintf("%.4f", p_value_numeric)
+            ),
+
+            .groups = "drop"
+          ) %>%
+          select(
+            Type,
+            `Mean per Person (Target)`,
+            `Mean per Person (Control)`,
+            `Mean Cost Difference`,
+            `95% CI`,
+            `p-value`,
+            p_value_numeric
+          )
       }
     )
 
-    datatable(
+    # =========================================================
+    # DATATABLE
+    # =========================================================
+
+    dt <- datatable(
       summary_df,
+
+      caption = htmltools::tags$caption(
+        style = 'caption-side: top;
+             text-align: left;
+             font-size: 18px;
+             font-weight: bold;',
+        table_title
+      ),
+
       options = list(
         pageLength = 20,
         scrollX = TRUE,
         dom = 'Bfrtip',
         buttons = c('copy', 'csv', 'excel'),
-        ordering = TRUE
+        ordering = TRUE,
+
+        columnDefs = list(
+          list(
+            targets =
+              which(names(summary_df) == "p_value_numeric") - 1,
+            visible = FALSE
+          )
+        )
       ),
+
       extensions = 'Buttons',
       rownames = FALSE,
       class = 'stripe hover compact'
-    ) %>%
-      formatCurrency(
-        columns = grep("Cost|Paid|Mean per Patient|Median|Difference",
-                       names(summary_df)),
-        currency = "€",
-        digits = 2,
-        before = FALSE,
-        mark = ","
-      ) %>%
-      formatRound(columns = "Total Patients", digits = 0, mark = ",") %>%
-      formatRound(columns = "p-value", digits = 4) %>%
-      formatStyle(
-        "p-value",
-        backgroundColor = styleInterval(
-          c(0.01, 0.05),
-          c("lightgreen", "khaki", NA)
+    )
+
+    # =========================================================
+    # CURRENCY FORMATTING
+    # =========================================================
+
+    money_cols <- grep(
+      "Cost|Paid|Mean|Median|Difference",
+      names(summary_df),
+      value = TRUE
+    )
+
+    money_cols <- setdiff(
+      money_cols,
+      c("p_value_numeric")
+    )
+
+    if (length(money_cols) > 0) {
+
+      dt <- dt %>%
+        formatCurrency(
+          columns = money_cols,
+          currency = "€",
+          digits = 2,
+          before = FALSE,
+          mark = ","
         )
-      )
+    }
+
+    # =========================================================
+    # TOTAL PATIENTS ROUNDING
+    # =========================================================
+
+    if ("Total Patients" %in% names(summary_df)) {
+
+      dt <- dt %>%
+        formatRound(
+          columns = "Total Patients",
+          digits = 0,
+          mark = ","
+        )
+    }
+
+    # =========================================================
+    # P-VALUE COLORS
+    # =========================================================
+
+    if ("p-value" %in% names(summary_df)) {
+
+      dt <- dt %>%
+        formatStyle(
+          "p-value",
+
+          valueColumns = "p_value_numeric",
+
+          backgroundColor = styleInterval(
+            c(0.01, 0.05),
+            c("lightgreen", "khaki", NA)
+          )
+        )
+    }
+
+    dt
 
   }, server = FALSE)
 }
